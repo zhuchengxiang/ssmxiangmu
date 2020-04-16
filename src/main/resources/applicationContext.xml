@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:mvc="http://www.springframework.org/schema/mvc"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:aop="http://www.springframework.org/schema/aop"
+       xmlns:tx="http://www.springframework.org/schema/tx"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc.xsd
+        http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd
+        http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop.xsd
+        http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx.xsd">
+
+    <!--这是spring框架和springmvc框架共同的配置文件-->
+    <!--扫描包-->
+    <context:component-scan base-package="com.xr"></context:component-scan>
+    <!--注解驱动-->
+    <mvc:annotation-driven></mvc:annotation-driven>
+    <!--springmvc静态资源访问-->
+    <mvc:default-servlet-handler></mvc:default-servlet-handler>
+    <mvc:resources mapping="/js/**" location="/js/"></mvc:resources>
+    <mvc:resources mapping="/images/**" location="/images/"></mvc:resources>
+    <mvc:resources mapping="/css/**" location="/css/"></mvc:resources>
+    <!--springmvc配置了前后缀-->
+    <bean class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+        <property name="prefix" value="/"></property>
+        <property name="suffix" value=".jsp"></property>
+    </bean>
+
+    <!--1.加载db.properties-->
+    <context:property-placeholder location="classpath*:db.properties"></context:property-placeholder>
+
+    <!--2.配置数据源-->
+    <bean id="dataSource" class="com.alibaba.druid.pool.DruidDataSource">
+        <!--数据库的四要素，也称数据源四要素-->
+        <property name="driverClassName" value="${jdbc.driverClass}"></property>
+        <property name="url" value="${jdbc.url}"></property>
+        <property name="username" value="${jdbc.username}"></property>
+        <property name="password" value="${jdbc.pwd}"></property>
+
+        <!--配置数据源参数-->
+        <!-- 最大并发连接数 -->
+        <property name="maxActive" value="${pool.maxActive}" />
+        <!-- 初始化连接数量 -->
+        <property name="initialSize" value="${pool.initialSize}" />
+        <!-- 最小空闲连接数 -->
+        <property name="minIdle" value="${pool.minIdle}" />
+        <!-- 配置获取连接等待超时的时间 -->
+        <property name="maxWait" value="${pool.maxWait}" />
+        <!-- 配置间隔多久才进行一次检测，检测需要关闭的空闲连接，单位是毫秒 -->
+        <property name="timeBetweenEvictionRunsMillis" value="${pool.timeBetweenEvictionRunsMillis}" />
+        <!-- 配置一个连接在池中最小生存的时间，单位是毫秒 -->
+        <property name="minEvictableIdleTimeMillis" value="${pool.minEvictableIdleTimeMillis}" />
+        <property name="validationQuery" value="${pool.validationQuery}" />
+        <property name="testWhileIdle" value="${pool.testWhileIdle}" />
+        <property name="testOnBorrow" value="${pool.testOnBorrow}" />
+        <property name="testOnReturn" value="${pool.testOnReturn}" />
+        <property name="maxOpenPreparedStatements" value="${pool.maxOpenPreparedStatements}" />
+        <!-- 打开removeAbandoned功能 -->
+        <property name="removeAbandoned" value="${pool.removeAbandoned}" />
+        <!-- 1800秒，也就是30分钟 -->
+        <property name="removeAbandonedTimeout" value="${pool.removeAbandonedTimeout}" />
+        <!-- 关闭abanded连接时输出错误日志 -->
+        <property name="logAbandoned" value="${pool.logAbandoned}" />
+    </bean>
+
+
+    <!--3.配置sqlSessionFactory（重要）-->
+    <bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+        <!--加载数据源(重要)-->
+        <property name="dataSource" ref="dataSource"></property>
+        <!--加载mybatis.xml配置文件（可配可不配）-->
+        <property name="configLocation" value="classpath:mybatis-config.xml"></property>
+        <!--加载映射文件（重要）-->
+        <property name="mapperLocations" value="classpath*:mappers/*.xml"></property>
+        <!--为com.xr.ssm.model包下所有的类设置别名-->
+        <property name="typeAliasesPackage" value="com.xr.model"></property>
+    </bean>
+
+
+    <!--4.扫描Mapper接口所在的dao层，生成代理实现类-->
+    <bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+        <!--向com.xr.ssm.dao中的接口注入sqlSessionFactory实例，这样接口可以直接使用该实例 -->
+        <property name="basePackage" value="com.xr.dao"></property>
+        <!--不能用ref-->
+        <property name="sqlSessionFactoryBeanName" value="sqlSessionFactory"></property>
+    </bean>
+
+
+    <!--5. 开启Spring事务管理  在service的impl中可以使用事务-->
+    <bean id="transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+        <property name="dataSource" ref="dataSource" />
+    </bean>
+    <!-- 启用Spring事务注解：在类或方法上使用 @Transactional -->
+    <tx:annotation-driven transaction-manager="transactionManager" />
+
+
+
+</beans>
